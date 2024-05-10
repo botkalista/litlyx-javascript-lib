@@ -4,14 +4,20 @@ const HOST = 'https://broker.litlyx.com';
 const PATH = '/v1/metrics/push';
 
 
+type Framework = 'Vanilla' | 'Nuxt' | 'Next' | 'Vue' | 'Angular' | 'React';
+
 /**
  * Settings type, represents optional settings for initializing LitClass.
  */
 export type Settings = {
-    testMode?: boolean,               // Enables test mode if set to true
     autoPageVisit?: boolean,          // Automatically tracks page visits if set to true
     customSession?: string,           // Allows specifying a custom session ID
-    serverMode?: boolean              // Enables server mode, affecting session handling and metrics pushing
+    serverMode?: boolean,             // Enables server mode, affecting session handling and metrics pushing
+    customServer?: string,
+    framework?: {
+        name: Framework,
+        settings?: any,
+    }
 }
 
 /**
@@ -79,53 +85,43 @@ class LitClass {
         this.initialized = true;
         this.project_id = project_id;
         this.settings = {
-            testMode: true,
             autoPageVisit: true,
             serverMode: false,
             customSession: this.generateSession(),
+            customServer: HOST,
+            framework: { name: 'Vanilla' },
             ...settings
         }
-        if (this.settings.autoPageVisit) { this.pushVisit(); }
+
+        if (this.settings.autoPageVisit && !this.settings.serverMode) this.pushVisit();
+
+        if (this.settings.framework.name == 'Vanilla') return;
+
+        if (this.settings.framework.name === 'Nuxt') return this.initNuxtVue();
+        if (this.settings.framework.name === 'Vue') return this.initNuxtVue();
+
+        if (this.settings.framework.name === 'React') this.initReact();
+
     }
 
-    /**
-     * Initializes analytics with integration for Nuxt applications.
-     * @param {string} project_id - The project identifier.
-     * @param {any} router - The Nuxt router instance.
-     * @param {Settings} [settings] - Optional settings for initialization.
-     */
-    public initNuxt(project_id: string, router: any, settings?: Settings) {
-        this.init(project_id, settings);
-        router.afterEach(() => this.pushVisit());
+
+    private initNuxtVue() {
+        if (!this.settings) return console.error('Settings is undefined');
+        if (!this.settings.framework.settings.router) return console.warn('Router is not passed to framework.settings.router');
+        this.settings.framework.settings.router.afterEach(() => this.pushVisit());
     }
 
-    public initNext(project_id: string, router: any, settings?: Settings) {
-        this.initNuxt(project_id, router, settings);
+    private initReact() {
+        if (!this.settings) return console.error('Settings is undefined');
+        if (!this.settings.framework.settings.useEffect) return console.warn('useEffect is not passed to framework.settings.useEffect');
+        if (!this.settings.framework.settings.useLocation) return console.warn('useLocation is not passed to framework.settings.useLocation');
+
+        this.settings.framework.settings.useEffect(() => {
+            this.pushVisit();
+        }, [this.settings.framework.settings.useLocation()]);
+
     }
 
-    public initVue3(project_id: string, router: any, settings?: Settings) {
-        this.initNuxt(project_id, router, settings);
-    }
-
-    public initVite(project_id: string, router: any, settings?: Settings) {
-        this.initNuxt(project_id, router, settings);
-    }
-
-    public initReact(project_id: string, router: any, settings?: Settings) {
-        this.initNuxt(project_id, router, settings);
-    }
-
-    public initAngular(project_id: string, router: any, settings?: Settings) {
-        this.initNuxt(project_id, router, settings);
-    }
-
-    public initSolid(project_id: string, router: any, settings?: Settings) {
-        this.initNuxt(project_id, router, settings);
-    }
-
-    public initSvelte(project_id: string, router: any, settings?: Settings) {
-        this.initNuxt(project_id, router, settings);
-    }
 
 
     /**
@@ -176,7 +172,7 @@ class LitClass {
      * @param {Record<string, any>} body - The data to be sent in the HTTP request.
      */
     private httpRequest(body: Record<string, any>) {
-        fetch(HOST + PATH, {
+        fetch((this.settings?.customServer || HOST) + PATH, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ pid: this.project_id, ...body })
