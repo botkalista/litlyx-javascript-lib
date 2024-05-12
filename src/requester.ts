@@ -1,6 +1,6 @@
 import { isClient } from './utils';
 
-const HOST = 'https://broker.litlyx.com';
+const HOST = 'broker.litlyx.com';
 const PATH = '/v1/metrics/push';
 
 /**
@@ -11,9 +11,11 @@ const PATH = '/v1/metrics/push';
  */
 export function sendRequest(project_id: string, body: Record<string, any>) {
 
+    console.log('Send request')
+
     try {
         if (isClient()) {
-            fetch(HOST + PATH, {
+            fetch('https://' + HOST + PATH, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ...body, pid: project_id })
@@ -21,8 +23,12 @@ export function sendRequest(project_id: string, body: Record<string, any>) {
                 console.error('ERROR PUSHING', ex);
             });
         } else {
-            const http = require('http');
-            const req = http.request({ hostname: HOST, path: PATH, method: 'POST', headers: { 'Content-Type': 'application/json' } });
+            const https = require('https');
+            const req = https.request({
+                hostname: HOST, path: PATH,
+                port: 443,
+                method: 'POST', headers: { 'Content-Type': 'application/json' }
+            });
             req.on('error', (error: any) => console.error('ERROR PUSHING', error));
             const requestBody = JSON.stringify({ ...body, pid: project_id });
             req.write(requestBody);
