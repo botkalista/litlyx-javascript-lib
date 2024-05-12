@@ -1,8 +1,8 @@
 {
-  "name": "@simpleauth/simpleauth-javascript",
+  "name": "litlyx",
   "version": "1.0.0",
-  "description": "",
-  "main": "src/index.js",
+  "description": "LitLyx provides real-time analytics/kpi & custom events for 15+ JS/TS frameworks with one-line code implementation.",
+  "main": "node/litlyx.js",
   "scripts": {
     "build": "npm run build:node && npm run build:browser",
     "build:node": "tsc -p tsconfig.json",
