@@ -10,7 +10,7 @@
   },
   "keywords": [],
   "author": "Emily",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "devDependencies": {
     "@types/node": "^20.12.7",
     "@types/node-fetch": "^2.6.11",
