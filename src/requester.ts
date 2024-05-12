@@ -11,8 +11,6 @@ const PATH = '/v1/metrics/push';
  */
 export function sendRequest(project_id: string, body: Record<string, any>) {
 
-    console.log('Send request')
-
     try {
         if (isClient()) {
             fetch('https://' + HOST + PATH, {
