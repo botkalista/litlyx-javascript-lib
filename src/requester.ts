@@ -5,15 +5,17 @@ const PATH = '/v1/metrics/push';
 
 /**
  * @param project_id - Project id on Litlyx dashboard
- * @param body- Content of the request
+ * @param body - Content of the request
  * 
  * Send a POST request
  */
-export function sendRequest(project_id: string, body: Record<string, any>) {
+export function sendRequest(project_id: string, body: Record<string, any>, testMode: boolean = false) {
+
+    const currentHost = testMode ? 'http://127.0.0.1:8088' : 'https://' + HOST;
 
     try {
         if (isClient()) {
-            fetch('https://' + HOST + PATH, {
+            fetch(currentHost + PATH, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ...body, pid: project_id })
@@ -21,10 +23,10 @@ export function sendRequest(project_id: string, body: Record<string, any>) {
                 console.error('ERROR PUSHING', ex);
             });
         } else {
-            const https = require('https');
-            const req = https.request({
-                hostname: HOST, path: PATH,
-                port: 443,
+            const httLib = testMode ? require('http') : require('https');
+            const req = httLib.request({
+                hostname: testMode ? '127.0.0.1' : HOST, path: PATH,
+                port: testMode ? 8088 : 443,
                 method: 'POST', headers: { 'Content-Type': 'application/json' }
             });
             req.on('error', (error: any) => console.error('ERROR PUSHING', error));

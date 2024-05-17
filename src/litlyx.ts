@@ -4,12 +4,11 @@ import { isClient } from "./utils";
 
 export type Settings = {
     autoPageVisit?: boolean,
-    customSession?: string,
+    testMode?: boolean,
 }
 
 
 export type PushOptions = {
-    session?: string,
     metadata?: Record<string, (string | number)>
 }
 
@@ -37,7 +36,7 @@ class Litlyx {
 
         this.settings = {
             autoPageVisit: true,
-            customSession: this.generateSession(),
+            testMode: false,
             ...settings
         }
 
@@ -66,39 +65,6 @@ class Litlyx {
     }
 
     /**
-     * Generates a random session ID.
-     * @returns {string} - A new session ID.
-     */
-    private generateSession() {
-        const sessionID = (Math.random() * Date.now()).toFixed(0);
-        return sessionID;
-    }
-
-    /**
-    * Retrieves or generates a session ID based on current settings.
-    * @returns {string} - The current or a new session ID.
-    */
-    private getSession() {
-        if (!this.settings) return 'NO_SESSION';
-        if (!isClient()) return 'SERVER_SESSION';
-        const sessionID = sessionStorage.getItem('lit-user-session');
-        if (sessionID) return sessionID;
-        const newSessionID = this.generateSession();
-        this.settings.customSession = newSessionID;
-        this.updateSession(newSessionID);
-        return newSessionID;
-    }
-
-    /**
-     * Updates the session storage with the new session ID.
-     * @param {string} session - The session ID to be stored.
-     */
-    public updateSession(session: string) {
-        if (!isClient()) return;
-        sessionStorage.setItem('lit-user-session', session);
-    }
-
-    /**
      * 
      * @param {string} name - Name of the event to log
      * @param {PushOptions} options - Optional: push options
@@ -106,11 +72,9 @@ class Litlyx {
     public event(name: string, options?: PushOptions) {
         if (!this.initialized) return console.error('Not initialized');
         if (!this.project_id) return console.error('project_id is required');
-
-        const session = options?.session || this.getSession();
         const metadata = options?.metadata ? JSON.stringify(options.metadata) : undefined;
         const type = 1;
-        sendRequest(this.project_id, { name, session, metadata, type });
+        sendRequest(this.project_id, { name, metadata, type }, this.settings?.testMode);
     }
 
     /**
@@ -128,7 +92,6 @@ class Litlyx {
             location.hostname,
             location.pathname,
             (document.referrer || 'self'),
-            this.getSession(),
             (innerWidth || 0),
             (innerHeight || 0),
             navigator.userAgent || ''
@@ -141,22 +104,21 @@ class Litlyx {
      * @param {string} website - Website name or identifier.
      * @param {string} page - Current page path.
      * @param {string} referrer - Referrer URL.
-     * @param {string} session - Session identifier.
      * @param {number} screenWidth - Screen width in pixels.
      * @param {number} screenHeight - Screen height in pixels.
      * @param {string} userAgent - Browser user agent.
      * @param {Record<string, (string | number)>} [metadata] - Additional metadata.
      */
-    private async pushPageVisit(website: string, page: string, referrer: string, session: string, screenWidth: number, screenHeight: number, userAgent: string, metadata?: Record<string, (string | number)>) {
+    private async pushPageVisit(website: string, page: string, referrer: string, screenWidth: number, screenHeight: number, userAgent: string, metadata?: Record<string, (string | number)>) {
 
         if (!this.initialized) return console.error('Not initialized');
         if (!this.project_id) return console.error('project_id is required');
 
         await sendRequest(this.project_id, {
-            website, page, referrer, session,
+            website, page, referrer,
             screenWidth, screenHeight,
             userAgent, metadata, type: 0
-        });
+        }, this.settings?.testMode);
 
     }
 
@@ -174,6 +136,9 @@ if (isClient()) {
     const scriptElem = document.querySelector('script[data-project]');
     if (scriptElem) {
         const project_id = scriptElem.getAttribute('data-project');
-        if (project_id) Lit.init(project_id);
+        const testMode = scriptElem.getAttribute('data-test-mode');
+        if (project_id) {
+            Lit.init(project_id, { testMode: testMode == 'true' });
+        }
     }
 }

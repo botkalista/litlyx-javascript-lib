@@ -1,9 +1,8 @@
 export type Settings = {
     autoPageVisit?: boolean;
-    customSession?: string;
+    testMode?: boolean;
 };
 export type PushOptions = {
-    session?: string;
     metadata?: Record<string, (string | number)>;
 };
 /**
@@ -22,21 +21,6 @@ declare class Litlyx {
     init(project_id: string, settings?: Settings): void;
     private hookHistory;
     /**
-     * Generates a random session ID.
-     * @returns {string} - A new session ID.
-     */
-    private generateSession;
-    /**
-    * Retrieves or generates a session ID based on current settings.
-    * @returns {string} - The current or a new session ID.
-    */
-    private getSession;
-    /**
-     * Updates the session storage with the new session ID.
-     * @param {string} session - The session ID to be stored.
-     */
-    updateSession(session: string): void;
-    /**
      *
      * @param {string} name - Name of the event to log
      * @param {PushOptions} options - Optional: push options
@@ -51,7 +35,6 @@ declare class Litlyx {
      * @param {string} website - Website name or identifier.
      * @param {string} page - Current page path.
      * @param {string} referrer - Referrer URL.
-     * @param {string} session - Session identifier.
      * @param {number} screenWidth - Screen width in pixels.
      * @param {number} screenHeight - Screen height in pixels.
      * @param {string} userAgent - Browser user agent.

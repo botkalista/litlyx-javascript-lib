@@ -11,7 +11,7 @@ const config: Configuration = {
     },
     resolve: {
         extensions: ['.ts', '.tsx', '.js'],
-        fallback: { https: false }
+        fallback: { https: false, http: false }
     },
     module: {
         rules: [

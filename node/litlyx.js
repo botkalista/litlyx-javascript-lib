@@ -23,7 +23,7 @@ class Litlyx {
         this.project_id = project_id;
         this.settings = {
             autoPageVisit: true,
-            customSession: this.generateSession(),
+            testMode: false,
             ...settings
         };
         if (!(0, utils_1.isClient)())
@@ -44,40 +44,6 @@ class Litlyx {
         addEventListener('popstate', () => me.pushVisit());
     }
     /**
-     * Generates a random session ID.
-     * @returns {string} - A new session ID.
-     */
-    generateSession() {
-        const sessionID = (Math.random() * Date.now()).toFixed(0);
-        return sessionID;
-    }
-    /**
-    * Retrieves or generates a session ID based on current settings.
-    * @returns {string} - The current or a new session ID.
-    */
-    getSession() {
-        if (!this.settings)
-            return 'NO_SESSION';
-        if (!(0, utils_1.isClient)())
-            return 'SERVER_SESSION';
-        const sessionID = sessionStorage.getItem('lit-user-session');
-        if (sessionID)
-            return sessionID;
-        const newSessionID = this.generateSession();
-        this.settings.customSession = newSessionID;
-        this.updateSession(newSessionID);
-        return newSessionID;
-    }
-    /**
-     * Updates the session storage with the new session ID.
-     * @param {string} session - The session ID to be stored.
-     */
-    updateSession(session) {
-        if (!(0, utils_1.isClient)())
-            return;
-        sessionStorage.setItem('lit-user-session', session);
-    }
-    /**
      *
      * @param {string} name - Name of the event to log
      * @param {PushOptions} options - Optional: push options
@@ -87,10 +53,9 @@ class Litlyx {
             return console.error('Not initialized');
         if (!this.project_id)
             return console.error('project_id is required');
-        const session = options?.session || this.getSession();
         const metadata = options?.metadata ? JSON.stringify(options.metadata) : undefined;
         const type = 1;
-        (0, requester_1.sendRequest)(this.project_id, { name, session, metadata, type });
+        (0, requester_1.sendRequest)(this.project_id, { name, metadata, type }, this.settings?.testMode);
     }
     /**
      * Triggers a page visit event using current settings.
@@ -104,29 +69,28 @@ class Litlyx {
             return console.error('project_id is required');
         if (!this.settings)
             return console.error('You must call init before pushing');
-        this.pushPageVisit(location.hostname, location.pathname, (document.referrer || 'self'), this.getSession(), (innerWidth || 0), (innerHeight || 0), navigator.userAgent || '');
+        this.pushPageVisit(location.hostname, location.pathname, (document.referrer || 'self'), (innerWidth || 0), (innerHeight || 0), navigator.userAgent || '');
     }
     /**
      * Sends a detailed page visit event to the server.
      * @param {string} website - Website name or identifier.
      * @param {string} page - Current page path.
      * @param {string} referrer - Referrer URL.
-     * @param {string} session - Session identifier.
      * @param {number} screenWidth - Screen width in pixels.
      * @param {number} screenHeight - Screen height in pixels.
      * @param {string} userAgent - Browser user agent.
      * @param {Record<string, (string | number)>} [metadata] - Additional metadata.
      */
-    async pushPageVisit(website, page, referrer, session, screenWidth, screenHeight, userAgent, metadata) {
+    async pushPageVisit(website, page, referrer, screenWidth, screenHeight, userAgent, metadata) {
         if (!this.initialized)
             return console.error('Not initialized');
         if (!this.project_id)
             return console.error('project_id is required');
         await (0, requester_1.sendRequest)(this.project_id, {
-            website, page, referrer, session,
+            website, page, referrer,
             screenWidth, screenHeight,
             userAgent, metadata, type: 0
-        });
+        }, this.settings?.testMode);
     }
 }
 /**
@@ -138,7 +102,9 @@ if ((0, utils_1.isClient)()) {
     const scriptElem = document.querySelector('script[data-project]');
     if (scriptElem) {
         const project_id = scriptElem.getAttribute('data-project');
-        if (project_id)
-            exports.Lit.init(project_id);
+        const testMode = scriptElem.getAttribute('data-test-mode');
+        if (project_id) {
+            exports.Lit.init(project_id, { testMode: testMode == 'true' });
+        }
     }
 }
