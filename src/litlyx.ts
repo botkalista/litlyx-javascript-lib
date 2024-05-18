@@ -43,6 +43,7 @@ class Litlyx {
         this.pushVisit();
         this.hookHistory();
 
+        sendKeepAlive(project_id, { website: location.hostname, userAgent: navigator.userAgent || '', instant: true }, this.settings?.testMode);
 
         setInterval(() => {
             sendKeepAlive(project_id, { website: location.hostname, userAgent: navigator.userAgent || '' }, this.settings?.testMode);
