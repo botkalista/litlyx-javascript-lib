@@ -1,7 +1,6 @@
 import { isClient } from './utils';
 
 const HOST = 'broker.litlyx.com';
-const PATH = '/v1/metrics/push';
 
 /**
  * @param project_id - Project id on Litlyx dashboard
@@ -11,26 +10,46 @@ const PATH = '/v1/metrics/push';
  */
 export function sendRequest(project_id: string, body: Record<string, any>, testMode: boolean = false) {
 
-    const currentHost = testMode ? 'http://127.0.0.1:8088' : 'https://' + HOST;
+    if (testMode) {
+        sendServerRequest('127.0.0.1', '/v1/metrics/push', 8088, false, { ...body, pid: project_id });
+    } else {
+        sendServerRequest(HOST, '/v1/metrics/push', 443, true, { ...body, pid: project_id });
+    }
+
+}
+
+
+export function sendKeepAlive(project_id: string, body: Record<string, any>, testMode: boolean = false) {
+    if (testMode) {
+        sendServerRequest('127.0.0.1', '/v1/keep_alive', 8088, false, { ...body, pid: project_id });
+    } else {
+        sendServerRequest(HOST, '/v1/keep_alive', 443, true, { ...body, pid: project_id });
+    }
+}
+
+
+function sendServerRequest(host: string, path: string, port: number, secure: boolean, body: Record<string, any>) {
 
     try {
+
+        const protocol = secure ? 'https' : 'http';
+
         if (isClient()) {
-            fetch(currentHost + PATH, {
+            const url = `${protocol}://${host}:${port}${path}`
+            fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...body, pid: project_id })
+                body: JSON.stringify(body)
             }).catch((ex: any) => {
                 console.error('ERROR PUSHING', ex);
             });
         } else {
-            const httLib = testMode ? require('http') : require('https');
+            const httLib = secure ? require('https') : require('http');
             const req = httLib.request({
-                hostname: testMode ? '127.0.0.1' : HOST, path: PATH,
-                port: testMode ? 8088 : 443,
-                method: 'POST', headers: { 'Content-Type': 'application/json' }
+                hostname: host, path: path, port: port, method: 'POST', headers: { 'Content-Type': 'application/json' }
             });
             req.on('error', (error: any) => console.error('ERROR PUSHING', error));
-            const requestBody = JSON.stringify({ ...body, pid: project_id });
+            const requestBody = JSON.stringify(body);
             req.write(requestBody);
             req.end();
         }

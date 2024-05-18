@@ -1,9 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.sendRequest = void 0;
+exports.sendKeepAlive = exports.sendRequest = void 0;
 const utils_1 = require("./utils");
 const HOST = 'broker.litlyx.com';
-const PATH = '/v1/metrics/push';
 /**
  * @param project_id - Project id on Litlyx dashboard
  * @param body - Content of the request
@@ -11,26 +10,43 @@ const PATH = '/v1/metrics/push';
  * Send a POST request
  */
 function sendRequest(project_id, body, testMode = false) {
-    const currentHost = testMode ? 'http://127.0.0.1:8088' : 'https://' + HOST;
+    if (testMode) {
+        sendServerRequest('127.0.0.1', '/v1/metrics/push', 8088, false, { ...body, pid: project_id });
+    }
+    else {
+        sendServerRequest(HOST, '/v1/metrics/push', 443, true, { ...body, pid: project_id });
+    }
+}
+exports.sendRequest = sendRequest;
+function sendKeepAlive(project_id, body, testMode = false) {
+    if (testMode) {
+        sendServerRequest('127.0.0.1', '/v1/keep_alive', 8088, false, { ...body, pid: project_id });
+    }
+    else {
+        sendServerRequest(HOST, '/v1/keep_alive', 443, true, { ...body, pid: project_id });
+    }
+}
+exports.sendKeepAlive = sendKeepAlive;
+function sendServerRequest(host, path, port, secure, body) {
     try {
+        const protocol = secure ? 'https' : 'http';
         if ((0, utils_1.isClient)()) {
-            fetch(currentHost + PATH, {
+            const url = `${protocol}://${host}:${port}${path}`;
+            fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...body, pid: project_id })
+                body: JSON.stringify(body)
             }).catch((ex) => {
                 console.error('ERROR PUSHING', ex);
             });
         }
         else {
-            const httLib = testMode ? require('http') : require('https');
+            const httLib = secure ? require('https') : require('http');
             const req = httLib.request({
-                hostname: testMode ? '127.0.0.1' : HOST, path: PATH,
-                port: testMode ? 8088 : 443,
-                method: 'POST', headers: { 'Content-Type': 'application/json' }
+                hostname: host, path: path, port: port, method: 'POST', headers: { 'Content-Type': 'application/json' }
             });
             req.on('error', (error) => console.error('ERROR PUSHING', error));
-            const requestBody = JSON.stringify({ ...body, pid: project_id });
+            const requestBody = JSON.stringify(body);
             req.write(requestBody);
             req.end();
         }
@@ -39,4 +55,3 @@ function sendRequest(project_id, body, testMode = false) {
         console.error('ERROR PUSHING', ex);
     }
 }
-exports.sendRequest = sendRequest;

@@ -1,5 +1,4 @@
 export type Settings = {
-    autoPageVisit?: boolean;
     testMode?: boolean;
 };
 export type PushOptions = {

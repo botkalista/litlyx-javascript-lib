@@ -1,9 +1,8 @@
-import { sendRequest } from "./requester";
+import { sendKeepAlive, sendRequest } from "./requester";
 import { isClient } from "./utils";
 
 
 export type Settings = {
-    autoPageVisit?: boolean,
     testMode?: boolean,
 }
 
@@ -35,7 +34,6 @@ class Litlyx {
         this.project_id = project_id;
 
         this.settings = {
-            autoPageVisit: true,
             testMode: false,
             ...settings
         }
@@ -43,8 +41,12 @@ class Litlyx {
         if (!isClient()) return;
 
         this.pushVisit();
-
         this.hookHistory();
+
+
+        setInterval(() => {
+            sendKeepAlive(project_id, { website: location.hostname, userAgent: navigator.userAgent || '' }, this.settings?.testMode);
+        }, 1000 * 60 * 1)
 
 
     }

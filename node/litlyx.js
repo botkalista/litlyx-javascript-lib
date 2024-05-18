@@ -22,7 +22,6 @@ class Litlyx {
         this.initialized = true;
         this.project_id = project_id;
         this.settings = {
-            autoPageVisit: true,
             testMode: false,
             ...settings
         };
@@ -30,6 +29,9 @@ class Litlyx {
             return;
         this.pushVisit();
         this.hookHistory();
+        setInterval(() => {
+            (0, requester_1.sendKeepAlive)(project_id, { website: location.hostname, userAgent: navigator.userAgent || '' }, this.settings?.testMode);
+        }, 1000 * 60 * 1);
     }
     hookHistory() {
         if (this.hooked)
