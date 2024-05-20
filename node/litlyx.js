@@ -29,6 +29,7 @@ class Litlyx {
             return;
         this.pushVisit();
         this.hookHistory();
+        (0, requester_1.sendKeepAlive)(project_id, { website: location.hostname, userAgent: navigator.userAgent || '', instant: true }, this.settings?.testMode);
         setInterval(() => {
             (0, requester_1.sendKeepAlive)(project_id, { website: location.hostname, userAgent: navigator.userAgent || '' }, this.settings?.testMode);
         }, 1000 * 60 * 1);
